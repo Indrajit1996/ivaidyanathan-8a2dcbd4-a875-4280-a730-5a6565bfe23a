@@ -1,0 +1,354 @@
+<div class="min-h-screen bg-gray-100">
+  <nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <h1 class="text-xl font-bold text-gray-900">Dashboard</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          @if (currentUser) {
+            <div class="flex items-center space-x-3">
+              <span class="text-sm text-gray-700">{{ currentUser.email }}</span>
+              <span [class]="'px-3 py-1 rounded-full text-xs font-medium ' + getRoleBadgeClass(currentUser.role)">
+                {{ currentUser.role }}
+              </span>
+              <button
+                (click)="logout()"
+                class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm"
+              >
+                Logout
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+      <!-- User Info Section -->
+      <!-- <div class="bg-white rounded-lg shadow p-6 mb-6">
+
+        @if (currentUser) {
+          <div class="space-y-4">
+            <div class="flex">
+              <p class="text-gray-600">Your role:</p>
+              <span [class]="'inline-block px-4 py-2 rounded-md text-sm font-medium ' + getRoleBadgeClass(currentUser.role)">
+                {{ currentUser.role }}
+              </span>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">Role Permissions</h3>
+
+              @switch (currentUser.role) {
+                @case ('OWNER') {
+                  <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>Full system access</li>
+                    <li>Manage all users and roles</li>
+                    <li>Configure system settings</li>
+                    <li>Access all resources</li>
+                  </ul>
+                }
+                @case ('ADMIN') {
+                  <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>Manage users</li>
+                    <li>Access most resources</li>
+                    <li>Configure settings</li>
+                    <li>View reports</li>
+                  </ul>
+                }
+                @case ('VIEWER') {
+                  <ul class="list-disc list-inside space-y-1 text-gray-700">
+                    <li>View resources</li>
+                    <li>Read-only access</li>
+                    <li>No modification permissions</li>
+                  </ul>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div> -->
+
+      <!-- Kanban Board Section -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">JIRA Board</h2>
+          <button
+            (click)="openCreateTaskModal()"
+            class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-lg"
+            title="Create new task"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Filter and Sort Controls -->
+        <div class="controls-section">
+          <div class="control-group">
+            <label for="sortBy">Sort By</label>
+            <select id="sortBy" [(ngModel)]="sortBy" (change)="onSortChange()">
+              <option value="none">None</option>
+              <option value="priority">Priority</option>
+              <option value="title">Title</option>
+              <option value="type">Type</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="filterPriority">Filter by Priority</label>
+            <select id="filterPriority" [(ngModel)]="filterByPriority" (change)="onFilterChange()">
+              <option value="all">All Priorities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="filterCategory">Filter by Category</label>
+            <select id="filterCategory" [(ngModel)]="filterByCategory" (change)="onFilterChange()">
+              <option value="all">All Categories</option>
+              <option value="Work">Work</option>
+              <option value="Personal">Personal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="kanban-board">
+          <!-- TODO Column -->
+          <div class="kanban-column">
+            <div class="kanban-header bg-blue-500">
+              <h3 class="text-white font-semibold text-lg">TODO</h3>
+            </div>
+            <div
+              cdkDropList
+              #todoList="cdkDropList"
+              [cdkDropListData]="todoTasks"
+              [cdkDropListConnectedTo]="[inProgressList, completeList]"
+              class="kanban-list"
+              (cdkDropListDropped)="drop($event)"
+            >
+              @for (task of todoTasks; track task.id) {
+                <div [class]="'task-card ' + getPriorityClass(task.priority)" cdkDrag (click)="openEditTaskModal(task, 'TODO')">
+                  <div class="task-card-placeholder" *cdkDragPlaceholder></div>
+                  <div class="task-header">
+                    <h4 class="task-title">{{ task.title }}</h4>
+                    <div class="task-badges">
+                      <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
+                        {{ task.priority }}
+                      </span>
+                      <span [class]="'type-badge ' + getTypeClass(task.type)">
+                        {{ task.type }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="task-description">{{ task.description }}</p>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- In Progress Column -->
+          <div class="kanban-column">
+            <div class="kanban-header bg-yellow-500">
+              <h3 class="text-white font-semibold text-lg">In Progress</h3>
+            </div>
+            <div
+              cdkDropList
+              #inProgressList="cdkDropList"
+              [cdkDropListData]="inProgressTasks"
+              [cdkDropListConnectedTo]="[todoList, completeList]"
+              class="kanban-list"
+              (cdkDropListDropped)="drop($event)"
+            >
+              @for (task of inProgressTasks; track task.id) {
+                <div [class]="'task-card ' + getPriorityClass(task.priority)" cdkDrag (click)="openEditTaskModal(task, 'IN_PROGRESS')">
+                  <div class="task-card-placeholder" *cdkDragPlaceholder></div>
+                  <div class="task-header">
+                    <h4 class="task-title">{{ task.title }}</h4>
+                    <div class="task-badges">
+                      <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
+                        {{ task.priority }}
+                      </span>
+                      <span [class]="'type-badge ' + getTypeClass(task.type)">
+                        {{ task.type }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="task-description">{{ task.description }}</p>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Complete Column -->
+          <div class="kanban-column">
+            <div class="kanban-header bg-green-500">
+              <h3 class="text-white font-semibold text-lg">Complete</h3>
+            </div>
+            <div
+              cdkDropList
+              #completeList="cdkDropList"
+              [cdkDropListData]="completeTasks"
+              [cdkDropListConnectedTo]="[todoList, inProgressList]"
+              class="kanban-list"
+              (cdkDropListDropped)="drop($event)"
+            >
+              @for (task of completeTasks; track task.id) {
+                <div [class]="'task-card ' + getPriorityClass(task.priority)" cdkDrag (click)="openEditTaskModal(task, 'COMPLETE')">
+                  <div class="task-card-placeholder" *cdkDragPlaceholder></div>
+                  <div class="task-header">
+                    <h4 class="task-title">{{ task.title }}</h4>
+                    <div class="task-badges">
+                      <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
+                        {{ task.priority }}
+                      </span>
+                      <span [class]="'type-badge ' + getTypeClass(task.type)">
+                        {{ task.type }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="task-description">{{ task.description }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Create/Edit Task Modal -->
+@if (isModalOpen) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">{{ isEditMode ? 'Edit Task' : 'Create New Task' }}</h3>
+        <button (click)="closeModal()" class="modal-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form (submit)="isEditMode ? updateTask() : createTask()" class="modal-form">
+        <div class="form-group">
+          <label for="taskTitle" class="form-label">
+            Title <span class="text-red-600">*</span>
+          </label>
+          <input
+            type="text"
+            id="taskTitle"
+            [(ngModel)]="newTask.title"
+            name="taskTitle"
+            class="form-input"
+            placeholder="Enter task title"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="taskDescription" class="form-label">
+            Description <span class="text-red-600">*</span>
+          </label>
+          <textarea
+            id="taskDescription"
+            [(ngModel)]="newTask.description"
+            name="taskDescription"
+            rows="4"
+            class="form-input"
+            placeholder="Enter task description"
+            required
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="taskType" class="form-label">
+            Category <span class="text-red-600">*</span>
+          </label>
+          <select
+            id="taskType"
+            [(ngModel)]="newTask.type"
+            name="taskType"
+            class="form-input"
+            required
+          >
+            <option value="" disabled>Select category</option>
+            <option value="Work">Work</option>
+            <option value="Personal">Personal</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="taskPriority" class="form-label">
+            Priority <span class="text-red-600">*</span>
+          </label>
+          <select
+            id="taskPriority"
+            [(ngModel)]="newTask.priority"
+            name="taskPriority"
+            class="form-input"
+            required
+          >
+            <option value="" disabled>Select priority</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="taskStatus" class="form-label">
+            Status <span class="text-red-600">*</span>
+          </label>
+          <select
+            id="taskStatus"
+            [(ngModel)]="newTask.status"
+            name="taskStatus"
+            class="form-input"
+            required
+          >
+            <option value="" disabled>Select status</option>
+            <option value="TODO">TODO</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETE">Complete</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          @if (isEditMode) {
+            <button
+              type="button"
+              (click)="deleteTask()"
+              class="btn-delete"
+            >
+              Delete
+            </button>
+          }
+          <div class="modal-actions-right">
+            <button
+              type="button"
+              (click)="closeModal()"
+              class="btn-cancel"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn-submit"
+              [disabled]="!isFormValid()"
+            >
+              {{ isEditMode ? 'Update Task' : 'Create Task' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+}
