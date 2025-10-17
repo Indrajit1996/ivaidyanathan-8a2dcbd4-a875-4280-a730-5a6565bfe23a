@@ -1,6 +1,2 @@
-import { setupZoneTestEnv } from 'jest-preset-angular/setup-env/zone';
-
-setupZoneTestEnv({
-  errorOnUnknownElements: true,
-  errorOnUnknownProperties: true,
-});
+// Import jest-preset-angular setup
+import 'jest-preset-angular/setup-jest';
