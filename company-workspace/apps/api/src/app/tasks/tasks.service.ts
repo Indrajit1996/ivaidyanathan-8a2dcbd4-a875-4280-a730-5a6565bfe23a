@@ -36,7 +36,13 @@ export class TasksService {
       organizationId: user.organizationId,
     });
 
-    return this.taskRepository.save(task);
+    const savedTask = await this.taskRepository.save(task);
+
+    // Return task with populated relations
+    return this.taskRepository.findOne({
+      where: { id: savedTask.id },
+      relations: ['owner', 'assignedTo', 'organization'],
+    });
   }
 
   /**
@@ -94,8 +100,21 @@ export class TasksService {
     // Verify update access
     this.verifyAccess(task, user, Permission.TASK_UPDATE_OWN);
 
+    // If assignedToId is being updated, clear the old assignedTo relation
+    // to avoid stale data
+    if (updateTaskDto.assignedToId !== undefined) {
+      task.assignedTo = null;
+    }
+
     Object.assign(task, updateTaskDto);
-    return this.taskRepository.save(task);
+    await this.taskRepository.save(task);
+
+    // Always return a fresh task with populated relations to ensure
+    // the assignedTo object matches the assignedToId
+    return this.taskRepository.findOne({
+      where: { id: task.id },
+      relations: ['owner', 'assignedTo', 'organization'],
+    });
   }
 
   /**

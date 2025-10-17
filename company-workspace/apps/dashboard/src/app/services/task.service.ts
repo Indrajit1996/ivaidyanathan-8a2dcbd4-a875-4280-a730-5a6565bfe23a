@@ -2,6 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export interface TaskUser {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -13,6 +20,8 @@ export interface Task {
   ownerId: string;
   organizationId: string;
   assignedToId?: string;
+  assignedTo?: TaskUser;
+  owner?: TaskUser;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +58,23 @@ export interface AuditLog {
   ipAddress?: string;
   userAgent?: string;
   createdAt: string;
+}
+
+export interface TaskStatistics {
+  totalTasks: number;
+  todoCount: number;
+  inProgressCount: number;
+  completedCount: number;
+  completionRate: number;
+  priorityBreakdown: {
+    urgent: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  typeBreakdown: {
+    [key: string]: number;
+  };
 }
 
 @Injectable({
@@ -157,5 +183,39 @@ export class TaskService {
       `${this.apiUrl}/audit-logs${queryParams}`,
       { headers: this.getAuthHeaders() }
     );
+  }
+
+  /**
+   * Calculate task statistics from a list of tasks
+   */
+  calculateStatistics(tasks: Task[]): TaskStatistics {
+    const totalTasks = tasks.length;
+    const todoCount = tasks.filter(t => t.status === 'TODO').length;
+    const inProgressCount = tasks.filter(t => t.status === 'IN_PROGRESS').length;
+    const completedCount = tasks.filter(t => t.status === 'COMPLETED').length;
+    const completionRate = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
+
+    const priorityBreakdown = {
+      urgent: tasks.filter(t => t.priority === 'URGENT').length,
+      high: tasks.filter(t => t.priority === 'HIGH').length,
+      medium: tasks.filter(t => t.priority === 'MEDIUM').length,
+      low: tasks.filter(t => t.priority === 'LOW').length
+    };
+
+    const typeBreakdown: { [key: string]: number } = {};
+    tasks.forEach(task => {
+      const type = task.type || 'Uncategorized';
+      typeBreakdown[type] = (typeBreakdown[type] || 0) + 1;
+    });
+
+    return {
+      totalTasks,
+      todoCount,
+      inProgressCount,
+      completedCount,
+      completionRate,
+      priorityBreakdown,
+      typeBreakdown
+    };
   }
 }

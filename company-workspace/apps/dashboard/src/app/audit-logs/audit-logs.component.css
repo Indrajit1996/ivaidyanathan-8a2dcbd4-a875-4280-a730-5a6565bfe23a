@@ -385,35 +385,411 @@
   margin: 0;
 }
 
+/* Mobile Menu Styles */
+.mobile-menu-button {
+  display: none;
+}
+
+.desktop-only {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2d3748;
+  transition: all 0.2s;
+}
+
+.hamburger-btn:hover {
+  background-color: #f3f4f6;
+  border-radius: 6px;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.mobile-menu-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background-color: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  animation: slideIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.mobile-user-info {
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-user-email {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  word-break: break-word;
+}
+
+.mobile-user-role {
+  margin-top: 0.5rem;
+}
+
+.mobile-nav-links {
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-nav-links a,
+.mobile-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  color: #374151;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.mobile-nav-links a:hover,
+.mobile-logout-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.mobile-nav-links a.active {
+  background-color: #e7f3ff;
+  color: #667eea;
+  border-left: 4px solid #667eea;
+}
+
+.mobile-logout-btn {
+  color: #dc2626;
+  margin-top: auto;
+}
+
+.mobile-logout-btn:hover {
+  background-color: #fee2e2;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-menu-button {
+    display: block;
+  }
+
+  .header-content {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .audit-logs-container {
     padding: 1rem;
   }
 
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
+  .audit-header {
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
   }
 
   .page-title {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
+  }
+
+  .user-email {
+    font-size: 0.8rem;
+  }
+
+  .role-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .btn-secondary {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .audit-main {
+    padding: 1.25rem;
+  }
+
+  .error-banner {
+    padding: 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  .filters-section {
+    padding: 1rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
   }
 
   .filters-grid {
     grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .filter-group label {
+    font-size: 0.8rem;
+  }
+
+  .filter-input {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.65rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .loading-container {
+    padding: 2.5rem;
+  }
+
+  .loading-container p {
+    font-size: 0.9rem;
   }
 
   .table-container {
     border-radius: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .audit-table {
     font-size: 0.75rem;
+    min-width: 800px;
   }
 
-  .audit-table th,
+  .audit-table th {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
   .audit-table td {
+    padding: 0.65rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .timestamp-cell {
+    font-size: 0.7rem;
+  }
+
+  .user-cell {
+    font-size: 0.75rem;
+  }
+
+  .role-badge-small {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+  }
+
+  .action-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .resource-id-cell {
+    font-size: 0.7rem;
+  }
+
+  .status-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .records-count {
+    font-size: 0.8rem;
+  }
+
+  .empty-state {
+    padding: 3rem 1.5rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1.1rem;
+  }
+
+  .empty-state p {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .audit-logs-container {
     padding: 0.5rem;
+  }
+
+  .audit-header {
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .page-title {
+    font-size: 1.1rem;
+  }
+
+  .audit-main {
+    padding: 0.85rem;
+  }
+
+  .filters-section {
+    padding: 0.65rem;
+  }
+
+  .section-title {
+    font-size: 0.9rem;
+  }
+
+  .filter-group label {
+    font-size: 0.75rem;
+  }
+
+  .filter-input {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.55rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    font-size: 0.75rem;
+    padding: 0.45rem 0.85rem;
+  }
+
+  .mobile-menu-drawer {
+    width: 85vw;
+    max-width: 320px;
+  }
+
+  .table-container {
+    margin: 0 -0.5rem;
+  }
+
+  .audit-table {
+    font-size: 0.7rem;
+    min-width: 700px;
+  }
+
+  .audit-table th {
+    padding: 0.6rem 0.35rem;
+    font-size: 0.7rem;
+  }
+
+  .audit-table td {
+    padding: 0.55rem 0.35rem;
+    font-size: 0.7rem;
+  }
+
+  .timestamp-cell {
+    font-size: 0.65rem;
+  }
+
+  .user-cell {
+    font-size: 0.7rem;
+  }
+
+  .action-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .role-badge-small {
+    font-size: 0.6rem;
+    padding: 0.12rem 0.4rem;
+  }
+
+  .status-badge {
+    font-size: 0.6rem;
+    padding: 0.12rem 0.35rem;
+  }
+
+  .resource-id-cell {
+    font-size: 0.65rem;
+  }
+
+  .records-count {
+    font-size: 0.75rem;
+  }
+
+  .empty-state {
+    padding: 2.5rem 1rem;
+  }
+
+  .empty-state svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .empty-state h3 {
+    font-size: 1rem;
+  }
+
+  .empty-state p {
+    font-size: 0.8rem;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+  }
+
+  .loading-container p {
+    font-size: 0.85rem;
   }
 }

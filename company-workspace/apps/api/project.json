@@ -59,6 +59,20 @@
           "buildTarget": "backend:build:production"
         }
       }
+    },
+    "seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "ts-node -P apps/api/tsconfig.app.json apps/api/src/seed.ts",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "seed:force": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "ts-node -P apps/api/tsconfig.app.json apps/api/src/seed.ts --force",
+        "cwd": "{workspaceRoot}"
+      }
     }
   },
   "tags": []

@@ -18,6 +18,7 @@ export class AuditLogsComponent implements OnInit {
   filteredLogs: AuditLog[] = [];
   isLoading = false;
   errorMessage = '';
+  isMobileMenuOpen = false;
 
   // Filter options
   filterUserId = '';
@@ -120,5 +121,18 @@ export class AuditLogsComponent implements OnInit {
 
   goToDashboard(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
   }
 }

@@ -5,13 +5,21 @@
         <div class="flex items-center">
           <h1 class="text-xl font-bold text-gray-900">Dashboard</h1>
         </div>
-        <div class="flex items-center space-x-4">
+
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex items-center space-x-4">
           @if (currentUser) {
             <div class="flex items-center space-x-3">
               <span class="text-sm text-gray-700">{{ currentUser.email }}</span>
               <span [class]="'px-3 py-1 rounded-full text-xs font-medium ' + getRoleBadgeClass(currentUser.role)">
                 {{ currentUser.role }}
               </span>
+              <a
+                href="/users"
+                class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
+              >
+                Users
+              </a>
               @if (currentUser.role === 'OWNER' || currentUser.role === 'ADMIN') {
                 <a
                   href="/log"
@@ -29,9 +37,83 @@
             </div>
           }
         </div>
+
+        <!-- Mobile Menu Button -->
+        <div class="md:hidden flex items-center">
+          <button
+            (click)="toggleMobileMenu()"
+            class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+            type="button"
+          >
+            <span class="sr-only">Open main menu</span>
+            <!-- Hamburger icon -->
+            <svg *ngIf="!isMobileMenuOpen" class="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <!-- Close icon -->
+            <svg *ngIf="isMobileMenuOpen" class="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </nav>
+
+  <!-- Mobile Menu Drawer -->
+  @if (isMobileMenuOpen) {
+    <div class="mobile-menu-overlay" (click)="closeMobileMenu()"></div>
+    <div class="mobile-menu-drawer">
+      @if (currentUser) {
+        <div class="mobile-menu-content">
+          <!-- User Info -->
+          <div class="mobile-user-info">
+            <div class="text-sm font-medium text-gray-900">{{ currentUser.email }}</div>
+            <span [class]="'inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ' + getRoleBadgeClass(currentUser.role)">
+              {{ currentUser.role }}
+            </span>
+          </div>
+
+          <!-- Navigation Links -->
+          <div class="mobile-nav-links">
+            <a
+              href="/users"
+              (click)="closeMobileMenu()"
+              class="mobile-nav-link"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              Users
+            </a>
+
+            @if (currentUser.role === 'OWNER' || currentUser.role === 'ADMIN') {
+              <a
+                href="/log"
+                (click)="closeMobileMenu()"
+                class="mobile-nav-link"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Audit Logs
+              </a>
+            }
+
+            <button
+              (click)="logout(); closeMobileMenu()"
+              class="mobile-nav-link text-red-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
 
   <main class="max-w-7xl mx-auto sm:px-6 lg:px-8">
     <div class="px-4 py-6 sm:px-0">
@@ -82,55 +164,89 @@
 
       <!-- Kanban Board Section -->
       <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-900">JIRA Board</h2>
-          @if (canEditTasks()) {
+        <div class="board-header-wrapper">
+          <h2 class="board-header-title">{{ showCharts ? 'Task Analytics' : 'JIRA Board' }}</h2>
+          <div class="board-header-actions">
             <button
-              (click)="openCreateTaskModal()"
-              class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-lg"
-              title="Create new task"
+              (click)="toggleDarkMode()"
+              class="flex items-center justify-center w-10 h-10 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700 transition-colors theme-toggle-btn"
+              title="{{ isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              <svg *ngIf="!isDarkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+              <svg *ngIf="isDarkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </button>
-          }
-        </div>
-
-        <!-- Filter and Sort Controls -->
-        <div class="controls-section">
-          <div class="control-group">
-            <label for="sortBy">Sort By</label>
-            <select id="sortBy" [(ngModel)]="sortBy" (change)="onSortChange()">
-              <option value="none">None</option>
-              <option value="priority">Priority</option>
-              <option value="title">Title</option>
-              <option value="type">Type</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="filterPriority">Filter by Priority</label>
-            <select id="filterPriority" [(ngModel)]="filterByPriority" (change)="onFilterChange()">
-              <option value="all">All Priorities</option>
-              <option value="URGENT">Urgent</option>
-              <option value="HIGH">High</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label for="filterCategory">Filter by Category</label>
-            <select id="filterCategory" [(ngModel)]="filterByCategory" (change)="onFilterChange()">
-              <option value="all">All Categories</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-            </select>
+            <button
+              (click)="toggleView()"
+              class="flex items-center px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white transition-colors text-sm font-medium"
+              title="{{ showCharts ? 'Show Board View' : 'Show Analytics' }}"
+            >
+              <svg *ngIf="!showCharts" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <svg *ngIf="showCharts" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 0v10" />
+              </svg>
+              {{ showCharts ? 'Board View' : 'Analytics' }}
+            </button>
+            @if (canEditTasks() && !showCharts) {
+              <button
+                (click)="openCreateTaskModal()"
+                class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-lg"
+                title="Create new task (Ctrl+N)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+            }
           </div>
         </div>
 
-        <div class="kanban-board">
+        <!-- Analytics View -->
+        @if (showCharts) {
+          <app-task-chart [statistics]="taskStatistics"></app-task-chart>
+        }
+
+        <!-- Board View -->
+        @if (!showCharts) {
+          <!-- Filter and Sort Controls -->
+          <div class="controls-section">
+            <div class="control-group">
+              <label for="sortBy">Sort By</label>
+              <select id="sortBy" [(ngModel)]="sortBy" (change)="onSortChange()">
+                <option value="none">None</option>
+                <option value="priority">Priority</option>
+                <option value="title">Title</option>
+                <option value="type">Type</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="filterPriority">Filter by Priority</label>
+              <select id="filterPriority" [(ngModel)]="filterByPriority" (change)="onFilterChange()">
+                <option value="all">All Priorities</option>
+                <option value="URGENT">Urgent</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+              </select>
+            </div>
+
+            <div class="control-group">
+              <label for="filterCategory">Filter by Category</label>
+              <select id="filterCategory" [(ngModel)]="filterByCategory" (change)="onFilterChange()">
+                <option value="all">All Categories</option>
+                <option value="Work">Work</option>
+                <option value="Personal">Personal</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="kanban-board">
           <!-- TODO Column -->
           <div class="kanban-column">
             <div class="kanban-header bg-blue-500">
@@ -167,6 +283,11 @@
                     </div>
                   </div>
                   <p class="task-description">{{ task.description }}</p>
+                  @if (task.assignedTo) {
+                    <div class="task-assignee-avatar" [title]="task.assignedTo.name || task.assignedTo.email">
+                      {{ getUserInitials(task.assignedTo) }}
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -208,6 +329,11 @@
                     </div>
                   </div>
                   <p class="task-description">{{ task.description }}</p>
+                  @if (task.assignedTo) {
+                    <div class="task-assignee-avatar" [title]="task.assignedTo.name || task.assignedTo.email">
+                      {{ getUserInitials(task.assignedTo) }}
+                    </div>
+                  }
                 </div>
               }
             </div>
@@ -249,11 +375,17 @@
                     </div>
                   </div>
                   <p class="task-description">{{ task.description }}</p>
+                  @if (task.assignedTo) {
+                    <div class="task-assignee-avatar" [title]="task.assignedTo.name || task.assignedTo.email">
+                      {{ getUserInitials(task.assignedTo) }}
+                    </div>
+                  }
                 </div>
               }
             </div>
           </div>
         </div>
+        }
       </div>
     </div>
   </main>
@@ -303,58 +435,81 @@
           ></textarea>
         </div>
 
-        <div class="form-group">
-          <label for="taskType" class="form-label">
-            Category <span class="text-red-600">*</span>
-          </label>
-          <select
-            id="taskType"
-            [(ngModel)]="newTask.type"
-            name="taskType"
-            class="form-input"
-            required
-          >
-            <option value="" disabled>Select category</option>
-            <option value="Work">Work</option>
-            <option value="Personal">Personal</option>
-          </select>
+        <!-- Category and Priority in flexbox -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskType" class="form-label">
+              Category <span class="text-red-600">*</span>
+            </label>
+            <select
+              id="taskType"
+              [(ngModel)]="newTask.type"
+              name="taskType"
+              class="form-input"
+              required
+            >
+              <option value="" disabled>Select category</option>
+              <option value="Work">Work</option>
+              <option value="Personal">Personal</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="taskPriority" class="form-label">
+              Priority <span class="text-red-600">*</span>
+            </label>
+            <select
+              id="taskPriority"
+              [(ngModel)]="newTask.priority"
+              name="taskPriority"
+              class="form-input"
+              required
+            >
+              <option value="" disabled>Select priority</option>
+              <option value="URGENT">Urgent</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="taskPriority" class="form-label">
-            Priority <span class="text-red-600">*</span>
-          </label>
-          <select
-            id="taskPriority"
-            [(ngModel)]="newTask.priority"
-            name="taskPriority"
-            class="form-input"
-            required
-          >
-            <option value="" disabled>Select priority</option>
-            <option value="URGENT">Urgent</option>
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
-          </select>
-        </div>
+        <!-- Status and Assignee in flexbox -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskStatus" class="form-label">
+              Status <span class="text-red-600">*</span>
+            </label>
+            <select
+              id="taskStatus"
+              [(ngModel)]="newTask.status"
+              name="taskStatus"
+              class="form-input"
+              required
+            >
+              <option value="" disabled>Select status</option>
+              <option value="TODO">TODO</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+            </select>
+          </div>
 
-        <div class="form-group">
-          <label for="taskStatus" class="form-label">
-            Status <span class="text-red-600">*</span>
-          </label>
-          <select
-            id="taskStatus"
-            [(ngModel)]="newTask.status"
-            name="taskStatus"
-            class="form-input"
-            required
-          >
-            <option value="" disabled>Select status</option>
-            <option value="TODO">TODO</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="COMPLETE">Complete</option>
-          </select>
+          <div class="form-group">
+            <label for="taskAssignee" class="form-label">
+              Assignee
+            </label>
+            <select
+              id="taskAssignee"
+              [(ngModel)]="newTask.assignedToId"
+              name="taskAssignee"
+              class="form-input"
+            >
+              <option value="">Unassigned</option>
+              @for (user of organizationUsers; track user.id) {
+                <option [value]="user.id">{{ user.email }}{{ user.name ? ' (' + user.name + ')' : '' }}</option>
+              }
+            </select>
+          </div>
         </div>
 
         <div class="modal-actions">

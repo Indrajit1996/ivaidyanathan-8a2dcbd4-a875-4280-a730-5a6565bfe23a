@@ -1,0 +1,45 @@
+<div class="chart-container">
+  @if (statistics) {
+    <!-- Summary Cards -->
+    <div class="stats-summary">
+      <div class="stat-card">
+        <div class="stat-label">Total Tasks</div>
+        <div class="stat-value">{{ statistics.totalTasks }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Completed</div>
+        <div class="stat-value">{{ statistics.completedCount }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">In Progress</div>
+        <div class="stat-value">{{ statistics.inProgressCount }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Completion Rate</div>
+        <div class="stat-value">{{ statistics.completionRate.toFixed(1) }}%</div>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <!-- Status Distribution Chart -->
+      <div class="chart-wrapper">
+        <canvas #statusChartCanvas></canvas>
+      </div>
+
+      <!-- Priority Distribution Chart -->
+      <div class="chart-wrapper">
+        <canvas #priorityChartCanvas></canvas>
+      </div>
+
+      <!-- Type Distribution Chart -->
+      <div class="chart-wrapper">
+        <canvas #typeChartCanvas></canvas>
+      </div>
+    </div>
+  } @else {
+    <div class="no-data">
+      <p>No task data available</p>
+    </div>
+  }
+</div>

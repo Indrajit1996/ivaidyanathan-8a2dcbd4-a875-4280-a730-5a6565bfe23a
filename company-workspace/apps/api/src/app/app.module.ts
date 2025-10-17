@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { UsersModule } from './users/users.module';
 import { User } from './user.entity';
 import { Organization } from './entities/organization.entity';
 import { SeedService } from './seed.service';
@@ -19,6 +20,7 @@ import { SeedService } from './seed.service';
     TasksModule,
     OrganizationsModule,
     AuditLogsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeedService],

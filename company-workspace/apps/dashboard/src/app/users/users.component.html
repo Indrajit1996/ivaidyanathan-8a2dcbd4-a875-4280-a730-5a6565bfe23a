@@ -1,0 +1,169 @@
+<div class="users-container">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <h1>User Management</h1>
+
+      <!-- Desktop Actions -->
+      <div class="header-actions desktop-only">
+        <button class="btn btn-secondary" (click)="goToDashboard()">
+          Back to Dashboard
+        </button>
+        <button class="btn btn-logout" (click)="logout()">
+          Logout
+        </button>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <div class="mobile-menu-button">
+        <button (click)="toggleMobileMenu()" class="hamburger-btn">
+          <svg *ngIf="!isMobileMenuOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg *ngIf="isMobileMenuOpen" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu Drawer -->
+  @if (isMobileMenuOpen) {
+    <div class="mobile-menu-overlay" (click)="closeMobileMenu()"></div>
+    <div class="mobile-menu-drawer">
+      <div class="mobile-user-info">
+        <div class="mobile-user-email">{{ currentUser?.email }}</div>
+        <div class="mobile-user-role">
+          <span class="role-badge" [ngClass]="getRoleBadgeClass(currentUser?.role || 'VIEWER')">
+            {{ currentUser?.role }}
+          </span>
+        </div>
+      </div>
+      <div class="mobile-nav-links">
+        <a href="/dashboard" (click)="closeMobileMenu()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Dashboard
+        </a>
+        <a href="/users" (click)="closeMobileMenu()" class="active">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Users
+        </a>
+        <button (click)="logout(); closeMobileMenu()" class="mobile-logout-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Current User Info -->
+  <div class="current-user-info" *ngIf="currentUser">
+    <div class="info-card">
+      <div class="info-row">
+        <span class="info-label">Logged in as:</span>
+        <span class="info-value">{{ currentUser.email }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Role:</span>
+        <span class="role-badge" [ngClass]="getRoleBadgeClass(currentUser.role)">
+          {{ currentUser.role }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="alert alert-success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <div class="alert alert-error" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading users...</p>
+  </div>
+
+  <!-- Users Table -->
+  <div class="users-table-container" *ngIf="!isLoading">
+    <div class="table-header">
+      <h2>All Users ({{ users.length }})</h2>
+      <p class="table-subtitle" *ngIf="canDeleteUsers()">
+        As an OWNER, you can delete any user except yourself
+      </p>
+      <p class="table-subtitle" *ngIf="!canDeleteUsers()">
+        You can view all users, but only OWNER can delete users
+      </p>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <!-- <th>Name</th> -->
+            <th>Role</th>
+            <th>Joined</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="table-row" *ngFor="let user of users" [class.current-user-row]="user.id === currentUser?.id">
+            <td class="email-cell">
+              {{ user.email }}
+              <span class="current-user-tag" *ngIf="user.id === currentUser?.id">(You)</span>
+            </td>
+            <!-- <td>{{ user.name || '-' }}</td> -->
+            <td>
+              <span class="role-badge" [ngClass]="getRoleBadgeClass(user.role)">
+                {{ user.role }}
+              </span>
+            </td>
+            <td>{{ formatDate(user.createdAt) }}</td>
+            <td class="actions-cell text-center">
+              <button
+                *ngIf="canDeleteUser(user)"
+                class="btn btn-delete"
+                (click)="deleteUser(user)"
+                [disabled]="isLoading"
+              >
+                Delete
+              </button>
+              <span *ngIf="user.id === currentUser?.id" class="no-action-text">
+                Cannot delete yourself
+              </span>
+              <span *ngIf="!canDeleteUsers() && user.id !== currentUser?.id" class="no-action-text">
+                OWNER only
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="users.length === 0" class="empty-state">
+        <p>No users found in your organization</p>
+      </div>
+    </div>
+  </div>
+</div>

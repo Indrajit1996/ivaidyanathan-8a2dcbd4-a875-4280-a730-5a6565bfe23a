@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -7,6 +7,8 @@ import { Organization } from './entities/organization.entity';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
+  private readonly logger = new Logger(SeedService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -15,6 +17,25 @@ export class SeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    const shouldSeed = process.env.AUTO_SEED !== 'false';
+
+    if (!shouldSeed) {
+      this.logger.log('🌱 Auto-seeding is disabled (AUTO_SEED=false)');
+      return;
+    }
+
+    this.logger.log('🌱 Starting database seeding...');
+
+    try {
+      await this.seedDatabase();
+      this.logger.log('✅ Database seeding completed successfully');
+    } catch (error) {
+      this.logger.error('❌ Database seeding failed:', error.message);
+      throw error;
+    }
+  }
+
+  async seedDatabase() {
     await this.seedOrganization();
     await this.seedUsers();
   }
@@ -27,7 +48,7 @@ export class SeedService implements OnModuleInit {
     });
 
     if (existingOrg) {
-      console.log(`Organization already exists: ${orgName}`);
+      this.logger.log(`   ✓ Organization already exists: ${orgName}`);
       return existingOrg;
     }
 
@@ -37,7 +58,7 @@ export class SeedService implements OnModuleInit {
     });
 
     await this.organizationRepository.save(organization);
-    console.log(`Organization created: ${orgName}`);
+    this.logger.log(`   ✓ Organization created: ${orgName}`);
     return organization;
   }
 
@@ -48,7 +69,7 @@ export class SeedService implements OnModuleInit {
     });
 
     if (!organization) {
-      console.error('Default organization not found. Users will not be created.');
+      this.logger.error('   ✗ Default organization not found. Users will not be created.');
       return;
     }
 
@@ -57,18 +78,25 @@ export class SeedService implements OnModuleInit {
         email: 'vindrajit1996@gmail.com',
         password: 'Admin@1234',
         role: UserRole.ADMIN,
+        name: 'Vindrajit Admin',
       },
       {
         email: 'chrisKaram@gmail.com',
         password: 'Admin@1234',
         role: UserRole.OWNER,
+        name: 'Chris Karam',
       },
       {
         email: 'testuser@gmail.com',
         password: 'Admin@1234',
         role: UserRole.VIEWER,
+        name: 'Test Viewer',
       },
     ];
+
+    let created = 0;
+    let updated = 0;
+    let existing = 0;
 
     for (const userData of usersToSeed) {
       let existingUser = await this.userRepository.findOne({
@@ -80,9 +108,11 @@ export class SeedService implements OnModuleInit {
         if (!existingUser.organizationId) {
           existingUser.organizationId = organization.id;
           await this.userRepository.save(existingUser);
-          console.log(`User updated with organization: ${userData.email}`);
+          this.logger.log(`   ✓ User updated with organization: ${userData.email}`);
+          updated++;
         } else {
-          console.log(`User already exists: ${userData.email}`);
+          this.logger.log(`   ○ User already exists: ${userData.email}`);
+          existing++;
         }
         continue;
       }
@@ -93,11 +123,15 @@ export class SeedService implements OnModuleInit {
         email: userData.email,
         password: hashedPassword,
         role: userData.role,
+        name: userData.name,
         organizationId: organization.id,
       });
 
       await this.userRepository.save(user);
-      console.log(`User created: ${userData.email} with role ${userData.role}`);
+      this.logger.log(`   ✓ User created: ${userData.email} (${userData.role})`);
+      created++;
     }
+
+    this.logger.log(`   📊 Summary: ${created} created, ${updated} updated, ${existing} existing`);
   }
 }
