@@ -2,25 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { AuthService, User } from '../auth/auth.service';
+import { TaskService, Task, CreateTaskDto, UpdateTaskDto } from '../services/task.service';
 import { CdkDragDrop, DragDropModule, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
-export interface Task {
-  id: number;
-  title: string;
-  description: string;
-  type: string;
-  priority: string;
-}
-
 type SortOption = 'none' | 'priority' | 'title' | 'type';
-type FilterOption = 'all' | 'high' | 'medium' | 'low';
-type CategoryOption = 'all' | 'Work' | 'Personal';
+type FilterOption = 'all' | 'HIGH' | 'MEDIUM' | 'LOW' | 'URGENT';
+type CategoryFilterOption = 'all' | 'Work' | 'Personal';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, DragDropModule, FormsModule],
+  providers: [TaskService, HttpClient],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -30,54 +25,189 @@ export class DashboardComponent implements OnInit {
   // Filter and Sort options
   sortBy: SortOption = 'none';
   filterByPriority: FilterOption = 'all';
-  filterByCategory: CategoryOption = 'all';
+  filterByCategory: CategoryFilterOption = 'all';
 
   // Modal state
   isModalOpen = false;
   isEditMode = false;
-  editingTaskId: number | null = null;
+  editingTaskId: string | null = null;
   originalTaskStatus: string = '';
   newTask = {
     title: '',
     description: '',
-    type: '',
-    priority: '',
-    status: 'TODO'
+    priority: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+    status: 'TODO' as 'TODO' | 'IN_PROGRESS' | 'COMPLETED',
+    dueDate: '',
+    type: 'Work'
   };
-  private nextTaskId = 8;
 
-  // Original task lists (unfiltered)
-  private originalTodoTasks: Task[] = [
-    { id: 1, title: 'Design new feature', description: 'Create mockups for the new dashboard layout', type: 'Work', priority: 'high' },
-    { id: 2, title: 'Review pull requests', description: 'Check and approve pending PRs', type: 'Personal', priority: 'medium' },
-    { id: 3, title: 'Update documentation', description: 'Add API documentation for new endpoints', type: 'Personal', priority: 'low' }
-  ];
-
-  private originalInProgressTasks: Task[] = [
-    { id: 4, title: 'Implement authentication', description: 'Set up JWT authentication system', type: 'Work', priority: 'high' },
-    { id: 5, title: 'Database migration', description: 'Update database schema', type: 'Personal', priority: 'medium' }
-  ];
-
-  private originalCompleteTasks: Task[] = [
-    { id: 6, title: 'Setup project', description: 'Initialize Angular project with NX', type: 'Work', priority: 'high' },
-    { id: 7, title: 'Configure CI/CD', description: 'Setup GitHub Actions pipeline', type: 'Work', priority: 'medium' }
-  ];
+  // Loading and error states
+  isLoading = false;
+  errorMessage = '';
 
   // Displayed task lists (filtered and sorted)
   todoTasks: Task[] = [];
   inProgressTasks: Task[] = [];
   completeTasks: Task[] = [];
 
+  // Original unfiltered tasks
+  private allTasks: Task[] = [];
+
   constructor(
     private authService: AuthService,
+    private taskService: TaskService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.authService.currentUser.subscribe(user => {
       this.currentUser = user;
+      if (user) {
+        this.loadTasks();
+      }
     });
-    this.applyFiltersAndSort();
+  }
+
+  /**
+   * GET /tasks – List accessible tasks (scoped to role/org)
+   */
+  loadTasks(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.taskService.getAllTasks().subscribe({
+      next: (tasks) => {
+        this.allTasks = tasks;
+        this.organizeTasks();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading tasks:', error);
+        this.errorMessage = error.error?.message || 'Failed to load tasks';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Organize tasks into TODO, IN_PROGRESS, and COMPLETED lists
+   */
+  private organizeTasks(): void {
+    const filteredTasks = this.applyFilters(this.allTasks);
+
+    this.todoTasks = this.sortTasks(
+      filteredTasks.filter(task => task.status === 'TODO')
+    );
+    this.inProgressTasks = this.sortTasks(
+      filteredTasks.filter(task => task.status === 'IN_PROGRESS')
+    );
+    this.completeTasks = this.sortTasks(
+      filteredTasks.filter(task => task.status === 'COMPLETED')
+    );
+  }
+
+  /**
+   * Apply filters to tasks
+   */
+  private applyFilters(tasks: Task[]): Task[] {
+    let filteredTasks = [...tasks];
+
+    // Filter by priority
+    if (this.filterByPriority !== 'all') {
+      filteredTasks = filteredTasks.filter(
+        task => task.priority === this.filterByPriority
+      );
+    }
+
+    // Filter by category
+    if (this.filterByCategory !== 'all') {
+      filteredTasks = filteredTasks.filter(
+        task => task.type === this.filterByCategory
+      );
+    }
+
+    return filteredTasks;
+  }
+
+  /**
+   * Sort tasks based on selected option
+   */
+  private sortTasks(tasks: Task[]): Task[] {
+    if (this.sortBy === 'none') {
+      return tasks;
+    }
+
+    const sortedTasks = [...tasks];
+
+    switch (this.sortBy) {
+      case 'priority':
+        const priorityOrder = { URGENT: 1, HIGH: 2, MEDIUM: 3, LOW: 4 };
+        return sortedTasks.sort((a, b) =>
+          priorityOrder[a.priority] - priorityOrder[b.priority]
+        );
+      case 'title':
+        return sortedTasks.sort((a, b) => a.title.localeCompare(b.title));
+      case 'type':
+        return sortedTasks.sort((a, b) => {
+          const typeA = a.type || '';
+          const typeB = b.type || '';
+          return typeA.localeCompare(typeB);
+        });
+      default:
+        return sortedTasks;
+    }
+  }
+
+  onSortChange(): void {
+    this.organizeTasks();
+  }
+
+  onFilterChange(): void {
+    this.organizeTasks();
+  }
+
+  /**
+   * Handle drag and drop between task lists
+   * Automatically calls PUT /tasks/:id to update status
+   */
+  drop(event: CdkDragDrop<Task[]>): void {
+    if (event.previousContainer === event.container) {
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      const task = event.previousContainer.data[event.previousIndex];
+
+      // Determine new status based on container
+      let newStatus: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' = 'TODO';
+      if (event.container.data === this.inProgressTasks) {
+        newStatus = 'IN_PROGRESS';
+      } else if (event.container.data === this.completeTasks) {
+        newStatus = 'COMPLETED';
+      }
+
+      // Update task status via API
+      this.taskService.updateTask(task.id, { status: newStatus }).subscribe({
+        next: (updatedTask) => {
+          transferArrayItem(
+            event.previousContainer.data,
+            event.container.data,
+            event.previousIndex,
+            event.currentIndex
+          );
+          // Update the task in the list with the response
+          event.container.data[event.currentIndex] = updatedTask;
+
+          // Update in allTasks array
+          const index = this.allTasks.findIndex(t => t.id === updatedTask.id);
+          if (index !== -1) {
+            this.allTasks[index] = updatedTask;
+          }
+        },
+        error: (error) => {
+          console.error('Error updating task status:', error);
+          this.errorMessage = error.error?.message || 'Failed to update task status. You may not have permission.';
+        }
+      });
+    }
   }
 
   logout(): void {
@@ -98,86 +228,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  drop(event: CdkDragDrop<Task[]>): void {
-    if (event.previousContainer === event.container) {
-      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
-    } else {
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
-    }
-    // Update original arrays after drag and drop
-    this.updateOriginalArrays();
-  }
-
-  onSortChange(): void {
-    this.applyFiltersAndSort();
-  }
-
-  onFilterChange(): void {
-    this.applyFiltersAndSort();
-  }
-
-  private applyFiltersAndSort(): void {
-    // Apply filters and sort to each list
-    this.todoTasks = this.filterAndSortTasks([...this.originalTodoTasks]);
-    this.inProgressTasks = this.filterAndSortTasks([...this.originalInProgressTasks]);
-    this.completeTasks = this.filterAndSortTasks([...this.originalCompleteTasks]);
-  }
-
-  private filterAndSortTasks(tasks: Task[]): Task[] {
-    let filteredTasks = tasks;
-
-    // Filter by priority
-    if (this.filterByPriority !== 'all') {
-      filteredTasks = filteredTasks.filter(task => task.priority === this.filterByPriority);
-    }
-
-    // Filter by category
-    if (this.filterByCategory !== 'all') {
-      filteredTasks = filteredTasks.filter(task => task.type === this.filterByCategory);
-    }
-
-    // Sort tasks
-    if (this.sortBy !== 'none') {
-      filteredTasks = this.sortTasks(filteredTasks, this.sortBy);
-    }
-
-    return filteredTasks;
-  }
-
-  private sortTasks(tasks: Task[], sortBy: SortOption): Task[] {
-    const sortedTasks = [...tasks];
-
-    switch (sortBy) {
-      case 'priority':
-        const priorityOrder = { high: 1, medium: 2, low: 3 };
-        return sortedTasks.sort((a, b) =>
-          priorityOrder[a.priority as keyof typeof priorityOrder] -
-          priorityOrder[b.priority as keyof typeof priorityOrder]
-        );
-      case 'title':
-        return sortedTasks.sort((a, b) => a.title.localeCompare(b.title));
-      case 'type':
-        return sortedTasks.sort((a, b) => a.type.localeCompare(b.type));
-      default:
-        return sortedTasks;
-    }
-  }
-
-  private updateOriginalArrays(): void {
-    // This method updates the original arrays after drag and drop
-    // to maintain the new order when filters are applied again
-    this.originalTodoTasks = [...this.todoTasks];
-    this.originalInProgressTasks = [...this.inProgressTasks];
-    this.originalCompleteTasks = [...this.completeTasks];
-  }
-
   getPriorityClass(priority: string): string {
-    return `priority-${priority}`;
+    return `priority-${priority.toLowerCase()}`;
   }
 
   getTypeClass(type: string): string {
@@ -187,6 +239,7 @@ export class DashboardComponent implements OnInit {
   openCreateTaskModal(): void {
     this.isEditMode = false;
     this.isModalOpen = true;
+    this.resetForm();
   }
 
   openEditTaskModal(task: Task, currentStatus: string): void {
@@ -195,10 +248,11 @@ export class DashboardComponent implements OnInit {
     this.originalTaskStatus = currentStatus;
     this.newTask = {
       title: task.title,
-      description: task.description,
-      type: task.type,
+      description: task.description || '',
       priority: task.priority,
-      status: currentStatus
+      status: task.status,
+      dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+      type: task.type || 'Work'
     };
     this.isModalOpen = true;
   }
@@ -208,6 +262,7 @@ export class DashboardComponent implements OnInit {
     this.isEditMode = false;
     this.editingTaskId = null;
     this.originalTaskStatus = '';
+    this.errorMessage = '';
     this.resetForm();
   }
 
@@ -215,117 +270,140 @@ export class DashboardComponent implements OnInit {
     return !!(
       this.newTask.title.trim() &&
       this.newTask.description.trim() &&
-      this.newTask.type &&
       this.newTask.priority &&
       this.newTask.status
     );
   }
 
+  /**
+   * POST /tasks – Create task (with permission check)
+   */
   createTask(): void {
     if (!this.isFormValid()) {
+      this.errorMessage = 'Please fill in all required fields';
       return;
     }
 
-    const task: Task = {
-      id: this.nextTaskId++,
+    const taskData: CreateTaskDto = {
       title: this.newTask.title.trim(),
       description: this.newTask.description.trim(),
+      priority: this.newTask.priority,
+      status: this.newTask.status,
       type: this.newTask.type,
-      priority: this.newTask.priority
+      dueDate: this.newTask.dueDate || undefined
     };
 
-    // Add task to the appropriate list based on status
-    switch (this.newTask.status) {
-      case 'TODO':
-        this.originalTodoTasks.push(task);
-        break;
-      case 'IN_PROGRESS':
-        this.originalInProgressTasks.push(task);
-        break;
-      case 'COMPLETE':
-        this.originalCompleteTasks.push(task);
-        break;
-    }
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    // Reapply filters and sorting
-    this.applyFiltersAndSort();
-
-    // Close modal and reset form
-    this.closeModal();
+    this.taskService.createTask(taskData).subscribe({
+      next: (task) => {
+        this.allTasks.push(task);
+        this.organizeTasks();
+        this.closeModal();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error creating task:', error);
+        this.errorMessage = error.error?.message || 'Failed to create task. You may not have permission.';
+        this.isLoading = false;
+      }
+    });
   }
 
+  /**
+   * PUT /tasks/:id – Edit task (if permitted)
+   */
   updateTask(): void {
-    if (!this.isFormValid() || this.editingTaskId === null) {
+    if (!this.isFormValid() || !this.editingTaskId) {
+      this.errorMessage = 'Please fill in all required fields';
       return;
     }
 
-    const updatedTask: Task = {
-      id: this.editingTaskId,
+    const updateData: UpdateTaskDto = {
       title: this.newTask.title.trim(),
       description: this.newTask.description.trim(),
+      priority: this.newTask.priority,
+      status: this.newTask.status,
       type: this.newTask.type,
-      priority: this.newTask.priority
+      dueDate: this.newTask.dueDate || undefined
     };
 
-    // Remove task from original status list
-    this.removeTaskFromList(this.editingTaskId, this.originalTaskStatus);
+    this.isLoading = true;
+    this.errorMessage = '';
 
-    // Add task to new status list
-    switch (this.newTask.status) {
-      case 'TODO':
-        this.originalTodoTasks.push(updatedTask);
-        break;
-      case 'IN_PROGRESS':
-        this.originalInProgressTasks.push(updatedTask);
-        break;
-      case 'COMPLETE':
-        this.originalCompleteTasks.push(updatedTask);
-        break;
-    }
-
-    // Reapply filters and sorting
-    this.applyFiltersAndSort();
-
-    // Close modal
-    this.closeModal();
+    this.taskService.updateTask(this.editingTaskId, updateData).subscribe({
+      next: (updatedTask) => {
+        // Update task in allTasks array
+        const index = this.allTasks.findIndex(t => t.id === this.editingTaskId);
+        if (index !== -1) {
+          this.allTasks[index] = updatedTask;
+        }
+        this.organizeTasks();
+        this.closeModal();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error updating task:', error);
+        this.errorMessage = error.error?.message || 'Failed to update task. You may not have permission.';
+        this.isLoading = false;
+      }
+    });
   }
 
+  /**
+   * DELETE /tasks/:id – Delete task (if permitted)
+   */
   deleteTask(): void {
-    if (this.editingTaskId === null) {
+    if (!this.editingTaskId) {
       return;
     }
 
-    // Remove task from the list
-    this.removeTaskFromList(this.editingTaskId, this.originalTaskStatus);
-
-    // Reapply filters and sorting
-    this.applyFiltersAndSort();
-
-    // Close modal
-    this.closeModal();
-  }
-
-  private removeTaskFromList(taskId: number, status: string): void {
-    switch (status) {
-      case 'TODO':
-        this.originalTodoTasks = this.originalTodoTasks.filter(t => t.id !== taskId);
-        break;
-      case 'IN_PROGRESS':
-        this.originalInProgressTasks = this.originalInProgressTasks.filter(t => t.id !== taskId);
-        break;
-      case 'COMPLETE':
-        this.originalCompleteTasks = this.originalCompleteTasks.filter(t => t.id !== taskId);
-        break;
+    if (!confirm('Are you sure you want to delete this task?')) {
+      return;
     }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.taskService.deleteTask(this.editingTaskId).subscribe({
+      next: () => {
+        // Remove task from allTasks array
+        this.allTasks = this.allTasks.filter(t => t.id !== this.editingTaskId);
+        this.organizeTasks();
+        this.closeModal();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error deleting task:', error);
+        this.errorMessage = error.error?.message || 'Failed to delete task. You may not have permission.';
+        this.isLoading = false;
+      }
+    });
   }
 
   private resetForm(): void {
     this.newTask = {
       title: '',
       description: '',
-      type: '',
-      priority: '',
-      status: 'TODO'
+      priority: 'MEDIUM',
+      status: 'TODO',
+      dueDate: '',
+      type: 'Work'
     };
+  }
+
+  /**
+   * Check if current user can edit tasks
+   */
+  canEditTasks(): boolean {
+    return this.currentUser?.role === 'OWNER' || this.currentUser?.role === 'ADMIN';
+  }
+
+  /**
+   * Check if current user can delete tasks
+   */
+  canDeleteTasks(): boolean {
+    return this.currentUser?.role === 'OWNER' || this.currentUser?.role === 'ADMIN';
   }
 }

@@ -14,6 +14,16 @@ export const appRoutes: Route[] = [
     canActivate: [authGuard]
   },
   {
+    path: 'dashboard',
+    loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'log',
+    loadComponent: () => import('./audit-logs/audit-logs.component').then(m => m.AuditLogsComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: '**',
     redirectTo: ''
   }

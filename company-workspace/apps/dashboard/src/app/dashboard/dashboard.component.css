@@ -1,3 +1,10 @@
+/* Dashboard Container */
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding-bottom: 2rem;
+}
+
 /* Filter and Sort Controls */
 .controls-section {
   display: flex;
@@ -87,6 +94,17 @@
 .task-card:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transform: translateY(-2px);
+}
+
+/* Read-only task card for VIEWER users */
+.task-card-readonly {
+  opacity: 0.85;
+  cursor: default !important;
+}
+
+.task-card-readonly:hover {
+  transform: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
 }
 
 /* Priority Border Colors */

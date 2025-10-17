@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-100">
+<div class="dashboard-container">
   <nav class="bg-white shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
@@ -12,6 +12,14 @@
               <span [class]="'px-3 py-1 rounded-full text-xs font-medium ' + getRoleBadgeClass(currentUser.role)">
                 {{ currentUser.role }}
               </span>
+              @if (currentUser.role === 'OWNER' || currentUser.role === 'ADMIN') {
+                <a
+                  href="/log"
+                  class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm"
+                >
+                  Audit Logs
+                </a>
+              }
               <button
                 (click)="logout()"
                 class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm"
@@ -76,15 +84,17 @@
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-2xl font-bold text-gray-900">JIRA Board</h2>
-          <button
-            (click)="openCreateTaskModal()"
-            class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-lg"
-            title="Create new task"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
+          @if (canEditTasks()) {
+            <button
+              (click)="openCreateTaskModal()"
+              class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-lg"
+              title="Create new task"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          }
         </div>
 
         <!-- Filter and Sort Controls -->
@@ -103,9 +113,10 @@
             <label for="filterPriority">Filter by Priority</label>
             <select id="filterPriority" [(ngModel)]="filterByPriority" (change)="onFilterChange()">
               <option value="all">All Priorities</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
+              <option value="URGENT">Urgent</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
             </select>
           </div>
 
@@ -134,7 +145,13 @@
               (cdkDropListDropped)="drop($event)"
             >
               @for (task of todoTasks; track task.id) {
-                <div [class]="'task-card ' + getPriorityClass(task.priority)" cdkDrag (click)="openEditTaskModal(task, 'TODO')">
+                <div
+                  [class]="'task-card ' + getPriorityClass(task.priority) + (canEditTasks() ? '' : ' task-card-readonly')"
+                  [cdkDragDisabled]="!canEditTasks()"
+                  cdkDrag
+                  (click)="canEditTasks() && openEditTaskModal(task, 'TODO')"
+                  [style.cursor]="canEditTasks() ? 'pointer' : 'default'"
+                >
                   <div class="task-card-placeholder" *cdkDragPlaceholder></div>
                   <div class="task-header">
                     <h4 class="task-title">{{ task.title }}</h4>
@@ -142,9 +159,11 @@
                       <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
                         {{ task.priority }}
                       </span>
-                      <span [class]="'type-badge ' + getTypeClass(task.type)">
-                        {{ task.type }}
-                      </span>
+                      @if (task.type) {
+                        <span [class]="'type-badge ' + getTypeClass(task.type)">
+                          {{ task.type }}
+                        </span>
+                      }
                     </div>
                   </div>
                   <p class="task-description">{{ task.description }}</p>
@@ -167,7 +186,13 @@
               (cdkDropListDropped)="drop($event)"
             >
               @for (task of inProgressTasks; track task.id) {
-                <div [class]="'task-card ' + getPriorityClass(task.priority)" cdkDrag (click)="openEditTaskModal(task, 'IN_PROGRESS')">
+                <div
+                  [class]="'task-card ' + getPriorityClass(task.priority) + (canEditTasks() ? '' : ' task-card-readonly')"
+                  [cdkDragDisabled]="!canEditTasks()"
+                  cdkDrag
+                  (click)="canEditTasks() && openEditTaskModal(task, 'IN_PROGRESS')"
+                  [style.cursor]="canEditTasks() ? 'pointer' : 'default'"
+                >
                   <div class="task-card-placeholder" *cdkDragPlaceholder></div>
                   <div class="task-header">
                     <h4 class="task-title">{{ task.title }}</h4>
@@ -175,9 +200,11 @@
                       <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
                         {{ task.priority }}
                       </span>
-                      <span [class]="'type-badge ' + getTypeClass(task.type)">
-                        {{ task.type }}
-                      </span>
+                      @if (task.type) {
+                        <span [class]="'type-badge ' + getTypeClass(task.type)">
+                          {{ task.type }}
+                        </span>
+                      }
                     </div>
                   </div>
                   <p class="task-description">{{ task.description }}</p>
@@ -200,7 +227,13 @@
               (cdkDropListDropped)="drop($event)"
             >
               @for (task of completeTasks; track task.id) {
-                <div [class]="'task-card ' + getPriorityClass(task.priority)" cdkDrag (click)="openEditTaskModal(task, 'COMPLETE')">
+                <div
+                  [class]="'task-card ' + getPriorityClass(task.priority) + (canEditTasks() ? '' : ' task-card-readonly')"
+                  [cdkDragDisabled]="!canEditTasks()"
+                  cdkDrag
+                  (click)="canEditTasks() && openEditTaskModal(task, 'COMPLETE')"
+                  [style.cursor]="canEditTasks() ? 'pointer' : 'default'"
+                >
                   <div class="task-card-placeholder" *cdkDragPlaceholder></div>
                   <div class="task-header">
                     <h4 class="task-title">{{ task.title }}</h4>
@@ -208,9 +241,11 @@
                       <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
                         {{ task.priority }}
                       </span>
-                      <span [class]="'type-badge ' + getTypeClass(task.type)">
-                        {{ task.type }}
-                      </span>
+                      @if (task.type) {
+                        <span [class]="'type-badge ' + getTypeClass(task.type)">
+                          {{ task.type }}
+                        </span>
+                      }
                     </div>
                   </div>
                   <p class="task-description">{{ task.description }}</p>
@@ -297,9 +332,10 @@
             required
           >
             <option value="" disabled>Select priority</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+            <option value="URGENT">Urgent</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
           </select>
         </div>
 
