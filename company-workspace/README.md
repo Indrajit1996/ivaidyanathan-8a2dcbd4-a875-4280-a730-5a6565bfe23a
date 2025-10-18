@@ -107,6 +107,28 @@ npx nx run backend:typeorm migration:run
 npx nx run backend:typeorm migration:generate -- -n MigrationName
 ```
 
+```
+Credentials to Login
+
+user-name: vindrajit1996@gmail.com
+password: Admin@1234
+
+user-name: chrisKaram@gmail.com
+password: Admin@1234
+
+user-name: testuser@gmail.com
+password: Admin@1234
+```
+
+```
+username                             access
+vindrajit1996@gmail.com              ADMIN
+chrisKaram@gmail.com                 OWNER
+testuser@gmail.com                   VIEWER
+```
+
+
+
 ## 🏗️ Architecture Overview
 
 ### NX Monorepo Layout
