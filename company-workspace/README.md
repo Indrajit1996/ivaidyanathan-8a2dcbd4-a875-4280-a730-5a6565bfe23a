@@ -42,7 +42,7 @@ A modern full-stack monorepo with **NestJS backend** and **Angular frontend**, p
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone git@github.com:Indrajit1996/ivaidyanathan-8a2dcbd4-a875-4280-a730-5a6565bfe23a.git
 cd company-workspace
 
 # Install dependencies
